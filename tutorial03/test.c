@@ -62,6 +62,17 @@ static void test_parse_false() {
         lept_free(&v);\
     } while(0)
 
+
+#define TEST_SET_NUMBER(value_to_set)\
+do{\
+    lept_value v;\
+    lept_init(&v);\
+    lept_set_number(&v, value_to_set);\
+    EXPECT_EQ_INT(LEPT_NUMBER, lept_get_type(&v));\
+    EXPECT_EQ_DOUBLE(value_to_set, lept_get_number(&v));\
+}while(0)
+
+
 static void test_parse_number() {
     TEST_NUMBER(0.0, "0");
     TEST_NUMBER(0.0, "-0");
@@ -107,7 +118,7 @@ static void test_parse_number() {
 static void test_parse_string() {
     TEST_STRING("", "\"\"");
     TEST_STRING("Hello", "\"Hello\"");
-#if 0
+#if 1
     TEST_STRING("Hello\nWorld", "\"Hello\\nWorld\"");
     TEST_STRING("\" \\ / \b \f \n \r \t", "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
 #endif
@@ -163,7 +174,7 @@ static void test_parse_missing_quotation_mark() {
 }
 
 static void test_parse_invalid_string_escape() {
-#if 0
+#if 1
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
@@ -172,7 +183,7 @@ static void test_parse_invalid_string_escape() {
 }
 
 static void test_parse_invalid_string_char() {
-#if 0
+#if 1
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x01\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x1F\"");
 #endif
@@ -189,11 +200,45 @@ static void test_access_null() {
 
 static void test_access_boolean() {
     /* \TODO */
+    lept_value v;
+    lept_init(&v);
+    lept_set_boolean(&v, LEPT_FALSE);
+    EXPECT_EQ_INT(LEPT_FALSE, lept_get_boolean(&v));
+    lept_set_boolean(&v, LEPT_TRUE);
+    EXPECT_EQ_INT(LEPT_TRUE, lept_get_boolean(&v));
     /* Use EXPECT_TRUE() and EXPECT_FALSE() */
 }
 
 static void test_access_number() {
     /* \TODO */
+    TEST_SET_NUMBER(0.0);
+    TEST_SET_NUMBER(0.0);
+    TEST_SET_NUMBER(0.0);
+    TEST_SET_NUMBER(1.0);
+    TEST_SET_NUMBER(-1.0);
+    TEST_SET_NUMBER(1.5);
+    TEST_SET_NUMBER(-1.5);
+    TEST_SET_NUMBER(3.1416);
+    TEST_SET_NUMBER(1E10);
+    TEST_SET_NUMBER(1e10);
+    TEST_SET_NUMBER(1E+10);
+    TEST_SET_NUMBER(1E-10);
+    TEST_SET_NUMBER(-1E10);
+    TEST_SET_NUMBER(-1e10);
+    TEST_SET_NUMBER(-1E+10);
+    TEST_SET_NUMBER(-1E-10);
+    TEST_SET_NUMBER(1.234E+10);
+    TEST_SET_NUMBER(1.234E-10);
+    TEST_SET_NUMBER(0.0); /* must underflow */
+    TEST_SET_NUMBER(1.0000000000000002); /* the smallest number > 1 */
+    TEST_SET_NUMBER( 4.9406564584124654e-324); /* minimum denormal */
+    TEST_SET_NUMBER(-4.9406564584124654e-324);
+    TEST_SET_NUMBER( 2.2250738585072009e-308);  /* Max subnormal double */
+    TEST_SET_NUMBER(-2.2250738585072009e-308);
+    TEST_SET_NUMBER( 2.2250738585072014e-308);  /* Min normal positive double */
+    TEST_SET_NUMBER(-2.2250738585072014e-308);
+    TEST_SET_NUMBER( 1.7976931348623157e+308);  /* Max double */
+    TEST_SET_NUMBER(-1.7976931348623157e+308);
 }
 
 static void test_access_string() {
