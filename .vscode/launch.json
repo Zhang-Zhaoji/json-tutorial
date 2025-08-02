@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/ai_double_major/cppLearning/jsonparser/json-tutorial/tutorial03",
-      "program": "d:/ai_double_major/cppLearning/jsonparser/json-tutorial/tutorial03/build/Debug/outDebug",
+      "cwd": "d:/ai_double_major/cppLearning/jsonparser/json-tutorial/tutorial05",
+      "program": "d:/ai_double_major/cppLearning/jsonparser/json-tutorial/tutorial05/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

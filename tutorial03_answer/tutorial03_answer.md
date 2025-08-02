@@ -9,7 +9,7 @@
 
 在编写单元测试时，我们故意先把值设为字符串，那么做可以测试设置其他类型时，有没有调用 `lept_free()` 去释放内存。
 
-~~~c
+```c
 static void test_access_boolean() {
     lept_value v;
     lept_init(&v);
@@ -29,11 +29,11 @@ static void test_access_number() {
     EXPECT_EQ_DOUBLE(1234.5, lept_get_number(&v));
     lept_free(&v);
 }
-~~~
+```
 
 以下是访问函数的实现：
 
-~~~c
+```c
 int lept_get_boolean(const lept_value* v) {
     assert(v != NULL && (v->type == LEPT_TRUE || v->type == LEPT_FALSE));
     return v->type == LEPT_TRUE;
@@ -54,7 +54,7 @@ void lept_set_number(lept_value* v, double n) {
     v->u.n = n;
     v->type = LEPT_NUMBER;
 }
-~~~
+```
 
 那问题是，如果我们没有调用 `lept_free()`，怎样能发现这些内存泄漏？
 
@@ -64,42 +64,42 @@ void lept_set_number(lept_value* v, double n) {
 
 首先，我们在两个 .c 文件首行插入这一段代码：
 
-~~~c
+```c
 #ifdef _WINDOWS
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
-~~~
+```
 
 并在 `main()` 开始位置插入：
 
-~~~c
+```c
 int main() {
 #ifdef _WINDOWS
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-~~~
+```
 
 在 Debug 配置下按 F5 生成、开始调试程序，没有任何异样。
 
 然后，我们删去 `lept_set_boolean()` 中的 `lept_free(v)`：
 
-~~~c
+```c
 void lept_set_boolean(lept_value* v, int b) {
     /* lept_free(v); */
     v->type = b ? LEPT_TRUE : LEPT_FALSE;
 }
-~~~
+```
 
 再次按 F5 生成、开始调试程序，在输出会看到内存泄漏信息：
 
-~~~
+```
 Detected memory leaks!
 Dumping objects ->
 C:\GitHub\json-tutorial\tutorial03_answer\leptjson.c(212) : {79} normal block at 0x013D9868, 2 bytes long.
  Data: <a > 61 00 
 Object dump complete.
-~~~
+```
 
 这正是我们在单元测试中，先设置字符串，然后设布尔值时没释放字符串所分配的内存。比较麻烦的是，它没有显示调用堆栈。从输出信息中 `... {79} ...` 我们知道是第 79 次分配的内存做成问题，我们可以加上 `_CrtSetBreakAlloc(79);` 来调试，那么它便会在第 79 次时中断于分配调用的位置，那时候就能从调用堆栈去找出来龙去脉。
 
@@ -107,7 +107,7 @@ Object dump complete.
 
 在 Linux、OS X 下，我们可以使用 [valgrind](https://valgrind.org/) 工具（用 `apt-get install valgrind`、 `brew install valgrind`）。我们完全不用修改代码，只要在命令行执行：
 
-~~~
+```
 $ valgrind --leak-check=full  ./leptjson_test
 ==22078== Memcheck, a memory error detector
 ==22078== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
@@ -129,24 +129,24 @@ $ valgrind --leak-check=full  ./leptjson_test
 ==22078==    by 0x1000017A3: main (test.c:235)
 ==22078== 
 ...
-~~~
+```
 
 它发现了在 `test_access_boolean()` 中，由 `lept_set_string()` 分配的 2 个字节（`"a"`）泄漏了。
 
 Valgrind 还有很多功能，例如可以发现未初始化变量。我们若在应用程序或测试程序中，忘了调用 `lept_init(&v)`，那么 `v.type` 的值没被初始化，其值是不确定的（indeterministic），一些函数如果读取那个值就会出现问题：
 
-~~~c
+```c
 static void test_access_boolean() {
     lept_value v;
     /* lept_init(&v); */
     lept_set_string(&v, "a", 1);
     ...
 }
-~~~
+```
 
 这种错误有时候测试时能正确运行（刚好 `v.type` 被设为 `0`），使我们误以为程序正确，而在发布后一些机器上却可能崩溃。这种误以为正确的假像是很危险的，我们可利用 valgrind 能自动测出来：
 
-~~~
+```
 $ valgrind --leak-check=full  ./leptjson_test
 ...
 ==22174== Conditional jump or move depends on uninitialised value(s)
@@ -156,7 +156,7 @@ $ valgrind --leak-check=full  ./leptjson_test
 ==22174==    by 0x100001839: test_parse (test.c:229)
 ==22174==    by 0x100001793: main (test.c:235)
 ==22174== 
-~~~
+```
 
 它发现 `lept_free()` 中依靠了一个未初始化的值来跳转，就是 `v.type`，而错误是沿自 `test_access_boolean()`。
 
@@ -166,7 +166,7 @@ $ valgrind --leak-check=full  ./leptjson_test
 
 转义序列的解析很直观，对其他不合法的字符返回 `LEPT_PARSE_INVALID_STRING_ESCAPE`：
 
-~~~c
+```c
 static int lept_parse_string(lept_context* c, lept_value* v) {
     /* ... */
     for (;;) {
@@ -192,19 +192,19 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
        }
    }
  }
-~~~
+```
 
 ## 3. 不合法的字符串
 
 上面已解决不合法转义，余下部分的唯一难度，是要从语法中知道哪些是不合法字符：
 
-~~~
+```
 unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
-~~~
+```
 
 当中空缺的 %x22 是双引号，%x5C 是反斜线，都已经处理。所以不合法的字符是 %x00 至 %x1F。我们简单地在 default 里处理：
 
-~~~c
+```c
         /* ... */
             default:
                 if ((unsigned char)ch < 0x20) { 
@@ -213,7 +213,7 @@ unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
                 }
                 PUTC(c, ch);
         /* ... */
-~~~
+```
 
 注意到 `char` 带不带符号，是实现定义的。如果编译器定义 `char` 为带符号的话，`(unsigned char)ch >= 0x80` 的字符，都会变成负数，并产生 `LEPT_PARSE_INVALID_STRING_CHAR` 错误。我们现时还没有测试 ASCII 以外的字符，所以有没有转型至不带符号都不影响，但下一单元开始处理 Unicode 的时候就要考虑了。
 
